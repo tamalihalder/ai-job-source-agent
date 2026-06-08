@@ -63,17 +63,20 @@ async def run(linkedin_url: str) -> dict:
     company_info = await get_company_info(linkedin_url)
 
     company_name = company_info.get("name")
+    company_website = company_info.get("website")
 
     if company_name:
         print(f"  Company : {company_name}")
+    if company_website:
+        print(f"  Website : {company_website}")
 
     if not company_name:
         print("  Could not extract company name automatically.")
         company_name = input("  Enter company name manually: ").strip()
 
-    # Step 2: Search for the careers page
-    _section(2, f"Searching for careers page  [{company_name}]")
-    career_url = await find_career_page(company_name)
+    # Step 2: Navigate from company website to careers page
+    _section(2, f"Finding careers page  [{company_name}]")
+    career_url = await find_career_page(company_name, company_website)
     print(f"\n  Career Page : {career_url}")
 
     # Step 3: Find one open job posting

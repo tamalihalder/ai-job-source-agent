@@ -206,5 +206,18 @@ async def get_company_info(linkedin_job_url: str) -> dict:
         info = await _get_company_name_and_url(page)
         print(f"  OK Company name : {info['name']}")
 
+        # Step 2: LinkedIn company page → external website URL
+        website = None
+        if info.get("linkedin_company_url"):
+            website = await _get_website_from_company_page(page, info["linkedin_company_url"])
+
+        # Step 3: DuckDuckGo fallback if website not found via LinkedIn
+        if not website and info.get("name"):
+            print("  -> No website found on LinkedIn company page, searching...")
+            website = await _search_website_by_name(info["name"])
+
+        if website:
+            print(f"  OK Company website : {website}")
+
         await browser.close()
-        return {"name": info["name"]}
+        return {"name": info["name"], "website": website}

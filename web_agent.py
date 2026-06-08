@@ -250,15 +250,24 @@ def _simplify_name_for_search(company_name: str) -> str:
     return name.strip(" ,")
 
 
-async def find_career_page(company_name: str) -> str:
+async def find_career_page(company_name: str, company_url: str | None = None) -> str:
     """
-    Two-step career page discovery:
-      1. Search Bing for '[company] careers jobs' to locate the company's own site.
-      2. If the top result already has a career keyword in the URL, return it directly.
-         Otherwise, navigate the company site and follow career/jobs links.
-    This is more reliable than pure search (which may return the homepage, not the
-    career subdomain) and more reliable than pure navigation (which needs a seed URL).
+    Find the company's careers page.
+
+    If company_url is provided (extracted from LinkedIn), navigate from that URL
+    directly — checking if it's already a careers page, then following career links.
+    Falls back to a web search when no URL is available.
     """
+    _CAREER_TERMS = {"career", "careers", "jobs", "hiring", "openings"}
+
+    if company_url:
+        print(f"  -> Starting from company website: {company_url}")
+        url_lower = company_url.lower()
+        if any(t in url_lower for t in _CAREER_TERMS):
+            print(f"  OK Company URL is already a careers page")
+            return company_url
+        return await _navigate_to_career_page(company_url)
+
     search_name = _simplify_name_for_search(company_name)
     print(f"  -> Searching: '{search_name} careers jobs'")
     results = await _web_search(f"{search_name} careers jobs")
@@ -270,7 +279,6 @@ async def find_career_page(company_name: str) -> str:
         return ""
 
     name_slug = re.sub(r"[^a-z0-9]", "", search_name.lower())
-    _CAREER_TERMS = {"career", "careers", "jobs", "hiring", "openings"}
 
     def _score(r: dict) -> int:
         url_lower = r["url"].lower()
